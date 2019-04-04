@@ -18,6 +18,7 @@
 #   $ ./miniplay.py -D default -T square   # 600 Hz square wave.
 #   $ ./miniplay.py -D default -T bits:01  # Same as square, 1200 Hz bitrate.
 #   $ ./miniplay.py -D default -T bits:00011  # 1200 Hz bitrate, square data.
+#   $ ./miniplay.py -D default -T bitp:00011  # 1200 Hz bitrate, square+ data.
 #
 # If you have sound card problems, drop the `-D default', or get a list of
 # `-D' values from `aplay -L'. See /proc/asound/cards for CARD= arguments.
@@ -93,7 +94,7 @@ def main(argv):
   else:
     raise RuntimeError('Unknown format: %s' % format)
 
-  def get_data_for_bits(bitrate, bits):
+  def get_data_for_bits(bitrate, mode, bits):
     # bitrate is bits per second.
     if rate % bitrate:
       raise ValueError('Invalid rate %d, must be a multiple of %d.' %
@@ -102,7 +103,10 @@ def main(argv):
     if s > bitrate:
       raise ValueError('Too many bits of data.')
     rss = rate / bitrate
-    v01 = (struct.pack(fmt, -maxv, -maxv), struct.pack(fmt, maxv, maxv))
+    if mode == 'bitp':
+      v01 = (struct.pack(fmt, 0, 0), struct.pack(fmt, maxv, maxv))
+    else:
+      v01 = (struct.pack(fmt, -maxv, -maxv), struct.pack(fmt, maxv, maxv))
     return ''.join(v01[bits[i % s] not in '0\0'] * rss for i in xrange(bitrate))
 
   hz = 440
@@ -129,9 +133,10 @@ def main(argv):
        for i in xrange(rate))  # Generate 1 second of data.
   elif tune == 'square':  # 600 Hz square wave, 1200 samples per second.
     data = get_data_for_bits(1200, '01')
-  elif tune.startswith('bits:'):
+  elif tune.startswith('bits:') or tune.startswith('bitp'):
     # Example tune: bits:0001
-    data = get_data_for_bits(1200, tune.split(':', 1)[1])
+    mode, bits = tune.split(':', 1)
+    data = get_data_for_bits(1200, mode, bits)
   else:
     raise RuntimeError('Unknown tune: %s' % tune)
   assert len(data) == rate * sbs * 2
