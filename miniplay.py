@@ -65,7 +65,7 @@ def main(argv):
     elif arg == '-D' and i < len(argv):
       device = argv[i]
       i += 1
-    elif arg == '-F' and i < len(argv):
+    elif arg == '-f' and i < len(argv):
       format = argv[i]
       i += 1
     elif arg == '-T' and i < len(argv):
